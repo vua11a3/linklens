@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LinkLens – Giải mã liên kết rút gọn</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#0b1020;--bg2:#1b1440;--card:rgba(255,255,255,.07);--bd:rgba(255,255,255,.14);--tx:#eef1ff;--mut:#9aa3c7;--ac:#7c8cff;--ac2:#b46cff;--code:#0a0e1c;--ok:#4ade80;--er:#ff6b81}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1020}}
+:root[data-theme="light"]{--bg:#f3f5ff;--bg2:#e4e0ff;--card:rgba(255,255,255,.75);--bd:rgba(40,50,120,.18);--tx:#161a33;--mut:#5a6190;--ac:#4b5cf0;--ac2:#8b3dff;--code:#f6f7ff;--ok:#12803a;--er:#c81d3b}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f3f5ff;--bg2:#e4e0ff;--card:rgba(255,255,255,.75);--bd:rgba(40,50,120,.18);--tx:#161a33;--mut:#5a6190;--ac:#4b5cf0;--ac2:#8b3dff;--code:#f6f7ff;--ok:#12803a;--er:#c81d3b}}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;color:var(--tx);background:radial-gradient(900px 500px at 15% -10%,var(--bg2),transparent),radial-gradient(700px 500px at 100% 0,rgba(124,140,255,.18),transparent),var(--bg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 4px}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.3px}
+.logo b{background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
+nav{display:flex;gap:6px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:4px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);overflow-x:auto}
+nav button{border:0;background:none;color:var(--mut);font:600 14px inherit;font-family:inherit;padding:8px 12px;border-radius:10px;cursor:pointer;white-space:nowrap}
+nav button.on{background:linear-gradient(90deg,var(--ac),var(--ac2));color:#fff}
+h1{font-size:clamp(26px,6vw,40px);line-height:1.15;margin:28px 0 8px;letter-spacing:-.8px}
+.sub{color:var(--mut);margin:0 0 20px}
+.glass{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:16px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);margin-bottom:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input[type=text]{flex:1 1 220px;min-width:0;background:var(--code);border:1px solid var(--bd);color:var(--tx);border-radius:12px;padding:14px;font:inherit}
+input:focus{outline:2px solid var(--ac)}
+.btn{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;padding:12px 16px;font:600 15px inherit;font-family:inherit;cursor:pointer}
+.btn.pri{background:linear-gradient(90deg,var(--ac),var(--ac2));border:0;color:#fff;display:inline-flex;align-items:center;gap:8px}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;display:none}
+.loading .spin{display:inline-block}
+@keyframes s{to{transform:rotate(360deg)}}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.badge{font-size:12px;color:var(--mut);border:1px solid var(--bd);border-radius:99px;padding:3px 10px}
+.hide{display:none!important}
+.final{word-break:break-all;font-family:ui-monospace,Menlo,monospace;font-size:14px;background:var(--code);border-radius:10px;padding:12px;margin:8px 0}
+.step{display:flex;gap:10px;padding:8px 0;border-top:1px dashed var(--bd);font-size:14px;word-break:break-all}
+.step i{flex:none;width:22px;height:22px;border-radius:50%;background:var(--ac);color:#fff;font-style:normal;font-size:12px;display:grid;place-items:center}
+.step small{display:block;color:var(--mut)}
+.ok{color:var(--ok)}.er{color:var(--er)}
+.note{font-size:13px;color:var(--mut)}
+.hist{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px dashed var(--bd);font-size:13px;word-break:break-all;cursor:pointer}
+h2{font-size:20px;margin:0 0 8px}h3{font-size:16px;margin:16px 0 6px}
+pre{background:var(--code);border:1px solid var(--bd);border-radius:12px;padding:14px;overflow-x:auto;font:12.5px/1.5 ui-monospace,Menlo,monospace;margin:8px 0;max-width:100%}
+ul,ol{padding-left:20px;margin:6px 0}li{margin:4px 0}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+footer{text-align:center;color:var(--mut);font-size:12px;padding:20px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">🔎 Link<b>Lens</b></div>
+  <nav id="nav">
+    <button data-t="t1" class="on">Giải mã</button>
+    <button data-t="t2">Backend</button>
+    <button data-t="t3">Kiến trúc</button>
+  </nav>
+</header>
+
+<!-- TAB 1 -->
+<section id="t1">
+  <h1>Giải mã &amp; truy vết liên kết rút gọn</h1>
+  <p class="sub">Dán một liên kết để bóc tách đích thật trước khi bạn bấm vào.</p>
+  <div class="glass">
+    <div class="row">
+      <input type="text" id="u" placeholder="Dán liên kết rút gọn vào đây…" autocomplete="off" inputmode="url">
+      <button class="btn" id="paste">Dán</button>
+      <button class="btn pri" id="go"><span class="spin"></span>Kiểm tra &amp; Giải mã</button>
+    </div>
+    <div class="badges" id="badges"></div>
+  </div>
+  <div class="glass hide" id="res">
+    <div class="card-h"><h2>Kết quả</h2><span id="status"></span></div>
+    <div class="final" id="final"></div>
+    <div class="row">
+      <button class="btn" id="copy">Copy Link</button>
+      <button class="btn pri" id="open">Mở liên kết an toàn</button>
+    </div>
+    <h3>Chuỗi chuyển hướng</h3>
+    <div id="chain"></div>
+    <p class="note" id="hint"></p>
+  </div>
+  <div class="glass">
+    <div class="card-h"><h2>Lịch sử gần đây</h2><button class="btn" id="clr">Xóa</button></div>
+    <div id="hist" class="note">Chưa có lịch sử.</div>
+  </div>
+  <p class="note">Trang này giải mã tham số được mã hóa (URL-encoded, Base64) ngay trên trình duyệt. Truy vết HTTP 301/302 thật cần máy chủ: xem tab Backend.</p>
+</section>
+
+<!-- TAB 2 -->
+<section id="t2" class="hide">
+  <h1>Backend xử lý chuyển hướng</h1>
+  <p class="sub">Node.js (Express): endpoint <code>POST /api/resolve</code> với chống SSRF, rate limiting và cache 10 phút.</p>
+  <div class="glass">
+    <div class="card-h"><h2>server.js</h2><button class="btn" id="copycode">Copy code</button></div>
+    <pre id="code"></pre>
+    <p class="note">Cài đặt: <code>npm i express express-rate-limit</code> rồi chạy <code>node server.js</code> (Node 18+).</p>
+  </div>
+  <div class="glass">
+    <h2>Đầu ra mẫu</h2>
+    <pre id="sample"></pre>
+  </div>
+</section>
+
+<!-- TAB 3 -->
+<section id="t3" class="hide">
+  <h1>Kiến trúc hệ thống</h1>
+  <p class="sub">Thiết kế cho hệ thống Link Expander &amp; Safety Checker chịu tải cao.</p>
+  <div class="glass">
+    <h2>Tech stack đề xuất</h2>
+    <ul>
+      <li><b>Frontend:</b> Next.js + Tailwind CSS</li>
+      <li><b>Backend:</b> Node.js (Express/Fastify) hoặc Python FastAPI</li>
+      <li><b>Cache &amp; rate limit:</b> Redis (TTL 10 phút)</li>
+      <li><b>Database:</b> PostgreSQL lưu lịch sử và thống kê</li>
+      <li><b>Hàng đợi:</b> BullMQ/RabbitMQ cho các lượt quét an toàn chạy nền</li>
+    </ul>
+  </div>
+  <div class="glass">
+    <h2>Luồng hoạt động</h2>
+    <ol>
+      <li>Người dùng dán link, frontend gửi <code>POST /api/resolve</code> kèm token Turnstile.</li>
+      <li>API kiểm tra token, rate limit theo IP, validate URL.</li>
+      <li>Tra Redis: có cache thì trả ngay.</li>
+      <li>Chưa có: giải mã tham số nhanh, rồi theo dõi redirect tối đa 10 bước (đã chặn IP nội bộ).</li>
+      <li>Đẩy URL đích vào hàng đợi để quét Google Safe Browsing / VirusTotal.</li>
+      <li>Lưu kết quả vào Redis + DB, trả JSON gồm chuỗi chuyển hướng, điểm an toàn, thời gian xử lý.</li>
+    </ol>
+  </div>
+  <div class="glass">
+    <h2>Bảo mật bắt buộc</h2>
+    <ul>
+      <li><b>Chống SSRF:</b> phân giải DNS rồi chặn IP private/loopback/link-local (kể cả sau mỗi lần redirect), chỉ cho phép http/https, giới hạn timeout và dung lượng.</li>
+      <li><b>Chống spam:</b> rate limit theo IP, Cloudflare Turnstile/Captcha.</li>
+      <li><b>Link độc hại:</b> Google Safe Browsing API, VirusTotal API.</li>
+      <li><b>Khác:</b> chạy fetcher trong container cô lập, không gửi cookie, log có hash IP.</li>
+    </ul>
+  </div>
+  <div class="glass">
+    <h2>Cấu trúc thư mục</h2>
+    <pre>linklens/
+├─ apps/
+│  ├─ web/            # Next.js frontend
+│  │  ├─ components/  # InputBox, ResultCard, History
+│  │  └─ app/
+│  └─ api/            # Backend
+│     ├─ src/
+│     │  ├─ routes/resolve.js
+│     │  ├─ services/  # tracer, decoder, safety
+│     │  ├─ middleware/ # rateLimit, turnstile
+│     │  ├─ utils/ssrf.js
+│     │  └─ cache/redis.js
+│     └─ tests/
+├─ workers/           # queue: quét Safe Browsing/VirusTotal
+├─ docker-compose.yml
+└─ .env.example</pre>
+  </div>
+</section>
+<footer>LinkLens · luôn kiểm tra kỹ trước khi mở liên kết lạ</footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const CODE=`const express = require('express');
+const rateLimit = require('express-rate-limit');
+const dns = require('dns').promises;
+const net = require('net');
+
+const app = express();
+app.use(express.json());
+app.use('/api/', rateLimit({ windowMs: 60000, max: 30 }));
+
+const cache = new Map(); // production: dùng Redis
+const TTL = 10 * 60 * 1000;
+const PARAMS = ['url','dest','u','target','redirect','link','to','goto','next'];
+
+function isPrivate(ip) {
+  if (net.isIPv6(ip)) return ip === '::1' || /^(fc|fd|fe80)/i.test(ip);
+  const [a, b] = ip.split('.').map(Number);
+  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) ||
+         (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+}
+
+async function assertSafe(raw) {
+  const u = new URL(raw);
+  if (!['http:', 'https:'].includes(u.protocol)) throw new Error('Giao thức không hợp lệ');
+  const host = u.hostname.replace(/^\\[|\\]$/g, '');
+  const addrs = net.isIP(host) ? [{ address: host }] : await dns.lookup(host, { all: true });
+  if (addrs.some(a => isPrivate(a.address))) throw new Error('Địa chỉ nội bộ bị chặn (SSRF)');
+  return u;
+}
+
+function quickDecode(raw) {
+  const u = new URL(raw);
+  for (const k of PARAMS) {
+    let v = u.searchParams.get(k);
+    if (!v) continue;
+    if (/^https?:\\/\\//i.test(v)) return v;
+    try {
+      const d = Buffer.from(v.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+      if (/^https?:\\/\\//i.test(d)) return d;
+    } catch {}
+  }
+  return null;
+}
+
+app.post('/api/resolve', async (req, res) => {
+  const t0 = Date.now();
+  try {
+    const input = String(req.body.url || '').trim();
+    await assertSafe(input);
+    const hit = cache.get(input);
+    if (hit && Date.now() - hit.t < TTL) return res.json({ ...hit.data, cached: true });
+
+    const chain = [];
+    let current = input;
+    const quick = quickDecode(input);
+    if (quick) { chain.push({ url: input, type: 'param-decode' }); current = quick; }
+
+    for (let i = 0; i < 10; i++) {
+      await assertSafe(current);
+      const r = await fetch(current, {
+        redirect: 'manual',
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkLens/1.0)' },
+        signal: AbortSignal.timeout(8000)
+      });
+      chain.push({ url: current, status: r.status });
+      const loc = r.headers.get('location');
+      if (r.status >= 300 && r.status < 400 && loc) current = new URL(loc, current).href;
+      else break;
+    }
+
+    const data = { success: true, finalUrl: current, chain, ms: Date.now() - t0 };
+    cache.set(input, { t: Date.now(), data });
+    res.json(data);
+  } catch (e) {
+    res.status(400).json({ success: false, error: e.message, ms: Date.now() - t0 });
+  }
+});
+
+app.listen(3000, () => console.log('API chạy tại :3000'));`;
+const SAMPLE=`{
+  "success": true,
+  "finalUrl": "https://example.com/bai-viet",
+  "chain": [
+    { "url": "https://bit.ly/abc123", "status": 301 },
+    { "url": "https://t.co/xyz", "status": 302 },
+    { "url": "https://example.com/bai-viet", "status": 200 }
+  ],
+  "ms": 412
+}`;
+$('code').textContent=CODE;$('sample').textContent=SAMPLE;
+
+// Tabs
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
+  ['t1','t2','t3'].forEach(t=>$(t).classList.toggle('hide',t!==b.dataset.t));
+  window.scrollTo(0,0);
+});
+
+// Badges
+['bit.ly','tinyurl.com','t.co','goo.gl','ow.ly','is.gd','buff.ly','rebrand.ly','cutt.ly','s.id','shorturl.at'].forEach(s=>{
+  const e=document.createElement('span');e.className='badge';e.textContent=s;$('badges').appendChild(e);
+});
+const SHORT=['bit.ly','tinyurl.com','t.co','goo.gl','ow.ly','is.gd','buff.ly','rebrand.ly','cutt.ly','s.id','shorturl.at'];
+const PARAMS=['url','dest','u','target','redirect','link','to','goto','next','r','q'];
+
+function isPriv(h){
+  h=h.replace(/^\[|\]$/g,'').toLowerCase();
+  if(h==='localhost'||h.endsWith('.local')||h==='::1')return true;
+  const m=h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if(!m)return false;const a=+m[1],b=+m[2];
+  return a===10||a===127||a===0||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168);
+}
+function b64(v){
+  try{const s=atob(v.replace(/-/g,'+').replace(/_/g,'/'));
+    return /^https?:\/\//i.test(s)?s:null}catch(e){return null}
+}
+function peel(raw){
+  const u=new URL(raw);
+  for(const k of PARAMS){
+    const v=u.searchParams.get(k);if(!v)continue;
+    if(/^https?:\/\//i.test(v))return{url:v,how:'Tham số ?'+k+'= (URL-encoded)'};
+    const d=b64(v);if(d)return{url:d,how:'Tham số ?'+k+'= (Base64)'};
+  }
+  return null;
+}
+
+let last='';
+function load(){try{return JSON.parse(localStorage.getItem('ll_hist')||'[]')}catch(e){return[]}}
+function save(a){try{localStorage.setItem('ll_hist',JSON.stringify(a.slice(0,8)))}catch(e){}}
+function renderHist(){
+  const h=load(),box=$('hist');box.textContent='';
+  if(!h.length){box.textContent='Chưa có lịch sử.';return}
+  h.forEach(x=>{
+    const d=document.createElement('div');d.className='hist';
+    const a=document.createElement('span');a.textContent=x.from;
+    const b=document.createElement('span');b.className='ok';b.textContent='→ '+x.to;
+    d.append(a,b);d.onclick=()=>{$('u').value=x.from;run()};box.appendChild(d);
+  });
+}
+function step(n,t,s){
+  const d=document.createElement('div');d.className='step';
+  const i=document.createElement('i');i.textContent=n;
+  const w=document.createElement('div');w.textContent=t;
+  const sm=document.createElement('small');sm.textContent=s;w.appendChild(sm);
+  d.append(i,w);return d;
+}
+async function run(){
+  const btn=$('go');btn.classList.add('loading');
+  const res=$('res'),chain=$('chain');chain.textContent='';res.classList.remove('hide');
+  const bad=(st,msg)=>{$('status').className='er';$('status').textContent=st;$('final').textContent=msg;$('hint').textContent='';last=''};
+  let raw=$('u').value.trim();
+  if(raw&&!/^[a-z]+:\/\//i.test(raw))raw='https://'+raw;
+  try{
+    let u;try{u=new URL(raw);if(!/^https?:$/.test(u.protocol))throw 0}catch(e){bad('Không hợp lệ','Vui lòng nhập một URL http/https hợp lệ.');return}
+    const r=await fetch('/api/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:raw})});
+    const d=await r.json();
+    if(!d.success){bad('Lỗi',d.error||'Không giải mã được.');return}
+    d.chain.forEach((c,i)=>chain.appendChild(step(i+1,c.url,c.status?('HTTP '+c.status):'Giải mã tham số')));
+    last=d.finalUrl;
+    $('status').className='ok';$('status').textContent='Xong · '+d.ms+' ms'+(d.cached?' (cache)':'');
+    $('final').textContent=d.finalUrl;
+    $('hint').textContent='Kiểm tra kỹ tên miền đích trước khi mở.';
+    if(d.finalUrl!==raw){const h=load().filter(x=>x.from!==raw);h.unshift({from:raw,to:d.finalUrl});save(h);renderHist()}
+  }catch(e){bad('Lỗi','Không kết nối được máy chủ. Hãy chắc chắn bạn mở trang qua địa chỉ của server.')}
+  finally{btn.classList.remove('loading')}
+}
+$('go').onclick=run;
+$('u').addEventListener('keydown',e=>{if(e.key==='Enter')run()});
+$('paste').onclick=async()=>{try{$('u').value=await navigator.clipboard.readText()}catch(e){$('u').focus()}};
+function flash(el,t){const o=el.textContent;el.textContent=t;setTimeout(()=>el.textContent=o,1200)}
+async function cp(txt,el){try{await navigator.clipboard.writeText(txt);flash(el,'Đã copy ✓')}catch(e){flash(el,'Không copy được')}}
+$('copy').onclick=()=>last&&cp(last,$('copy'));
+$('copycode').onclick=()=>cp(CODE,$('copycode'));
+$('open').onclick=()=>{if(last&&confirm('Mở liên kết này trong tab mới?\n\n'+last))window.open(last,'_blank','noopener,noreferrer')};
+$('clr').onclick=()=>{try{localStorage.removeItem('ll_hist')}catch(e){}renderHist()};
+renderHist();
+</script>
+</body>
+</html>
